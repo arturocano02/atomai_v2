@@ -16,6 +16,7 @@ interface PatentRowProps {
 
 export function PatentRow({ patent, onUpdate, onRemove, canRemove }: PatentRowProps) {
   const [collapsedSections, setCollapsedSections] = useState<Record<string, boolean>>({});
+  const [justPasted, setJustPasted] = useState<Record<string, boolean>>({});
 
   const updateField = (field: keyof PatentInput, value: string) => {
     onUpdate({ ...patent, [field]: value });
@@ -89,17 +90,23 @@ export function PatentRow({ patent, onUpdate, onRemove, canRemove }: PatentRowPr
             onChange={(e) => {
               const newValue = e.target.value;
               updateField("metadata", newValue);
-              // Auto-collapse when text is pasted (with longer delay and length check)
-              if (newValue.trim().length > 100 && !collapsedSections["metadata"]) {
-                setTimeout(() => {
-                  // Double-check the value is still there before collapsing
-                  if (patent.metadata.trim().length > 100) {
-                    toggleSection("metadata");
-                  }
-                }, 1000);
-              }
             }}
-            className="min-h-[120px] resize-y"
+            onPaste={() => {
+              // Handle paste event specifically
+              setJustPasted(prev => ({ ...prev, metadata: true }));
+              setTimeout(() => {
+                if (patent.metadata.trim().length > 100 && !collapsedSections["metadata"]) {
+                  toggleSection("metadata");
+                }
+                // Clear the "just pasted" indicator after a delay
+                setTimeout(() => {
+                  setJustPasted(prev => ({ ...prev, metadata: false }));
+                }, 500);
+              }, 100); // Short delay to ensure state is updated
+            }}
+            className={`min-h-[120px] resize-y transition-all duration-200 ${
+              justPasted["metadata"] ? "ring-2 ring-green-400 bg-green-50" : ""
+            }`}
           />
         )}
         
@@ -153,18 +160,24 @@ export function PatentRow({ patent, onUpdate, onRemove, canRemove }: PatentRowPr
                       onChange={(e) => {
                         const newValue = e.target.value;
                         updateField(key as keyof PatentInput, newValue);
-                        // Auto-collapse when text is pasted (with longer delay and length check)
-                        if (newValue.trim().length > 100 && !collapsedSections[sectionKey]) {
-                          setTimeout(() => {
-                            // Double-check the value is still there before collapsing
-                            const currentValue = patent[key as keyof PatentInput] as string;
-                            if (currentValue.trim().length > 100) {
-                              toggleSection(sectionKey);
-                            }
-                          }, 1000);
-                        }
                       }}
-                      className="min-h-[120px] resize-y"
+                      onPaste={() => {
+                        // Handle paste event specifically
+                        setJustPasted(prev => ({ ...prev, [sectionKey]: true }));
+                        setTimeout(() => {
+                          const currentValue = patent[key as keyof PatentInput] as string;
+                          if (currentValue.trim().length > 100 && !collapsedSections[sectionKey]) {
+                            toggleSection(sectionKey);
+                          }
+                          // Clear the "just pasted" indicator after a delay
+                          setTimeout(() => {
+                            setJustPasted(prev => ({ ...prev, [sectionKey]: false }));
+                          }, 500);
+                        }, 100); // Short delay to ensure state is updated
+                      }}
+                      className={`min-h-[120px] resize-y transition-all duration-200 ${
+                        justPasted[sectionKey] ? "ring-2 ring-green-400 bg-green-50" : ""
+                      }`}
                     />
                   )}
                   
