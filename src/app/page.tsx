@@ -7,7 +7,7 @@ import { Card } from "@/components/ui/card";
 import { PatentRow } from "@/components/PatentRow";
 import { ResultsTable } from "@/components/ResultsTable";
 import { RankingCard } from "@/components/RankingCard";
-import { PatentInput, PatentScore, AppState } from "@/types/patent";
+import { PatentInput, PatentScore, AppState, CATEGORIES, SCORING_WEIGHTS } from "@/types/patent";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { Plus, BarChart3, Loader2 } from "lucide-react";
 
@@ -45,7 +45,7 @@ export default function Home() {
   };
 
   const addPatent = () => {
-    if (appState.patents.length < 4) {
+    if (appState.patents.length < 5) {
       const newId = (appState.patents.length + 1).toString();
       setAppState(prev => ({
         ...prev,
@@ -205,7 +205,7 @@ export default function Home() {
         <div className="space-y-4 mb-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Patents</h2>
-            {appState.patents.length < 4 && (
+            {appState.patents.length < 5 && (
               <Button onClick={addPatent} variant="outline" size="sm">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Patent
@@ -347,6 +347,30 @@ export default function Home() {
               <div className="lg:col-span-2">
                 <Card className="p-6">
                   <h3 className="text-lg font-semibold mb-4">Score Heatmap</h3>
+                  
+                  {/* Category Labels */}
+                  <div className="flex items-center space-x-3 mb-2">
+                    <div className="w-20 text-xs text-gray-500 font-medium">
+                      Patent
+                    </div>
+                    <div className="flex-1 flex space-x-1">
+                      {Object.entries(CATEGORIES).map(([key, config]) => (
+                        <div key={key} className="flex-1 text-center">
+                          <div className="text-xs text-gray-600 font-medium mb-1">
+                            {config.title}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            ({Math.round(SCORING_WEIGHTS[key as keyof typeof SCORING_WEIGHTS] * 100)}%)
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="w-16 text-xs text-gray-500 font-medium text-right">
+                      Total
+                    </div>
+                  </div>
+
+                  {/* Heatmap Rows */}
                   <div className="space-y-3">
                     {appState.results
                       .sort((a, b) => b.weightedTotal - a.weightedTotal)
@@ -356,18 +380,25 @@ export default function Home() {
                             Patent {result.id}
                           </div>
                           <div className="flex-1 flex space-x-1">
-                            {Object.values(result.perCategory).map((category, idx) => (
-                              <div
-                                key={idx}
-                                className="flex-1 h-8 rounded"
-                                style={{
-                                  backgroundColor: `hsl(${Math.round(category.score * 1.2)}, 70%, 50%)`,
-                                }}
-                                title={`${category.score}/100`}
-                              />
-                            ))}
+                            {Object.entries(CATEGORIES).map(([key, config]) => {
+                              const categoryScore = result.perCategory[key as keyof typeof result.perCategory];
+                              return (
+                                <div
+                                  key={key}
+                                  className="flex-1 h-8 rounded flex items-center justify-center"
+                                  style={{
+                                    backgroundColor: `hsl(${Math.round(categoryScore.score * 1.2)}, 70%, 50%)`,
+                                  }}
+                                  title={`${config.title}: ${categoryScore.score}/100`}
+                                >
+                                  <span className="text-xs font-bold text-white drop-shadow-sm">
+                                    {categoryScore.score}
+                                  </span>
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div className="w-16 text-sm font-mono text-right">
+                          <div className="w-16 text-sm font-mono text-right font-bold">
                             {Math.round(result.weightedTotal)}
                           </div>
                         </div>
@@ -377,6 +408,92 @@ export default function Home() {
               </div>
             </div>
             <ResultsTable results={appState.results} patents={appState.patents} />
+            
+            {/* Winner Summary */}
+            <Card className="p-6 mt-6">
+              <h3 className="text-lg font-semibold mb-4">Why Patent {appState.results.sort((a, b) => b.weightedTotal - a.weightedTotal)[0].id} Won</h3>
+              <div className="prose prose-sm max-w-none">
+                <p className="text-gray-700 leading-relaxed">
+                  {(() => {
+                    const sortedResults = appState.results.sort((a, b) => b.weightedTotal - a.weightedTotal);
+                    const winner = sortedResults[0];
+                    const winnerId = winner.id;
+                    
+                    // Get the top 3 categories for the winner with their rationales
+                    const winnerCategories = Object.entries(winner.perCategory)
+                      .sort(([,a], [,b]) => b.score - a.score)
+                      .slice(0, 3);
+                    
+                    const topCategory = winnerCategories[0];
+                    const secondCategory = winnerCategories[1];
+                    const thirdCategory = winnerCategories[2];
+                    
+                    // Extract key insights from the top category rationale
+                    const topRationale = topCategory[1].rationale;
+                    const secondRationale = secondCategory[1].rationale;
+                    const thirdRationale = thirdCategory[1].rationale;
+                    
+                    // Create a more narrative explanation
+                    const categoryName = (key: string) => key.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, str => str.toUpperCase());
+                    
+                    return `Patent ${winnerId} stands out as the superior choice because it most effectively addresses the core problem through its ${categoryName(topCategory[0]).toLowerCase()} approach. ${topRationale} This strategic advantage is complemented by its strong ${categoryName(secondCategory[0]).toLowerCase()}, where ${secondRationale} Furthermore, the patent demonstrates exceptional ${categoryName(thirdCategory[0]).toLowerCase()}, as evidenced by ${thirdRationale} Together, these strengths create a comprehensive solution that not only tackles the immediate problem but also provides robust protection and commercial viability. The patent's multi-dimensional excellence makes it the most promising choice for achieving your strategic objectives.`;
+                  })()}
+                </p>
+              </div>
+            </Card>
+
+            {/* Detailed Category Analysis */}
+            <Card className="p-6 mt-6">
+              <h3 className="text-lg font-semibold mb-6">Detailed Category Analysis</h3>
+              <div className="space-y-6">
+                {appState.results
+                  .sort((a, b) => b.weightedTotal - a.weightedTotal)
+                  .map((result, index) => (
+                    <div key={result.id} className="border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-md font-semibold text-gray-800">
+                          Patent {result.id} {index === 0 && <span className="text-yellow-600 text-sm">(Winner)</span>}
+                        </h4>
+                        <div className="text-sm font-mono text-gray-600">
+                          Total Score: {Math.round(result.weightedTotal)}
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {Object.entries(CATEGORIES).map(([key, config]) => {
+                          const categoryScore = result.perCategory[key as keyof typeof result.perCategory];
+                          const categoryName = config.title;
+                          const weight = Math.round(SCORING_WEIGHTS[key as keyof typeof SCORING_WEIGHTS] * 100);
+                          
+                          return (
+                            <div key={key} className="border-l-4 border-blue-200 pl-4 py-2">
+                              <div className="flex items-center justify-between mb-2">
+                                <h5 className="font-medium text-gray-800">
+                                  {categoryName} ({weight}%)
+                                </h5>
+                                <div className="flex items-center space-x-2">
+                                  <div 
+                                    className="w-3 h-3 rounded-full"
+                                    style={{
+                                      backgroundColor: `hsl(${Math.round(categoryScore.score * 1.2)}, 70%, 50%)`,
+                                    }}
+                                  />
+                                  <span className="font-mono text-sm font-medium">
+                                    {categoryScore.score}/100
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-sm text-gray-700 leading-relaxed">
+                                {categoryScore.rationale}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </Card>
           </div>
         )}
       </div>

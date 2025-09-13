@@ -31,7 +31,7 @@ export const PatentScoreSchema = z.object({
 
 export const ScoreRequestSchema = z.object({
   problemStatement: z.string().min(1),
-  patents: z.array(PatentInputSchema).min(1).max(4),
+  patents: z.array(PatentInputSchema).min(1).max(5),
 });
 
 export const ScoreResponseSchema = z.object({
