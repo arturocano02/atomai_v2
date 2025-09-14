@@ -33,6 +33,7 @@ export default function Home() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isUsingRealAI, setIsUsingRealAI] = useState<boolean | null>(null);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState<{
     current: number;
     total: number;
@@ -42,6 +43,47 @@ export default function Home() {
 
   const updateProblemStatement = (value: string) => {
     setAppState(prev => ({ ...prev, problemStatement: value, results: undefined }));
+  };
+
+  const loadDemoData = () => {
+    const demoProblemStatement = "Develop an AI-powered system for real-time patent monitoring and competitive intelligence that can automatically analyze patent landscapes, identify emerging technologies, and provide strategic recommendations for R&D investments.";
+    
+    const demoPatents: PatentInput[] = [
+      {
+        id: "1",
+        metadata: "Patent Title: AI-Driven Patent Landscape Analysis System\nApplicant: TechCorp Inc.\nSector: Artificial Intelligence\nFiling Date: 2023-08-15\nAbstract: A machine learning system that processes patent databases to identify technology trends and competitive threats in real-time.\nUse Cases: Automated patent monitoring, competitive intelligence, R&D strategy optimization",
+        strategicRelevance: "This patent directly addresses the core problem of automated patent monitoring by providing a comprehensive AI system that can analyze patent landscapes in real-time. The technology enables companies to stay ahead of competitive threats and identify emerging opportunities, making it highly strategic for R&D investment decisions.",
+        technicalStrength: "The patent demonstrates strong technical innovation with advanced machine learning algorithms for natural language processing of patent documents. It includes novel approaches to semantic analysis, trend detection, and predictive modeling that show deep technical expertise and robust implementation.",
+        legalDurability: "The patent family includes 3 related applications across major jurisdictions (US, EU, Asia) with broad claim coverage. The claims are well-structured and cover both the core algorithms and practical applications, providing strong protection against design-around attempts.",
+        marketLeverage: "The technology addresses a $2.5B market for competitive intelligence tools with high commercial potential. It offers significant cost savings over manual patent analysis and provides unique value propositions that could command premium pricing in the enterprise software market.",
+        freedomToOperate: "The patent covers fundamental approaches to AI-powered patent analysis with broad claim scope that would be difficult to design around. Competitors would need to develop substantially different technical approaches to avoid infringement, giving strong blocking potential.",
+        licensingFeasibility: "The patent is owned by a technology company with clear licensing history and established IP monetization programs. The technology is well-documented and modular, making it attractive for licensing to enterprise software companies and consulting firms."
+      },
+      {
+        id: "2", 
+        metadata: "Patent Title: Blockchain-Based Patent Verification and Tracking System\nApplicant: SecurePatents LLC\nSector: Blockchain Technology\nFiling Date: 2023-11-22\nAbstract: A distributed ledger system for verifying patent authenticity and tracking patent ownership changes.\nUse Cases: Patent verification, ownership tracking, IP portfolio management",
+        strategicRelevance: "While this patent addresses patent-related technology, it focuses on verification and tracking rather than the core problem of real-time monitoring and competitive intelligence. It provides supporting infrastructure but doesn't directly solve the stated problem of AI-powered patent analysis.",
+        technicalStrength: "The patent shows solid technical implementation of blockchain technology for IP management. However, the technical approach is more conventional and doesn't demonstrate the advanced AI/ML capabilities needed for the stated problem of automated patent analysis and trend detection.",
+        legalDurability: "The patent has good legal protection with 2 related applications and well-written claims. However, the claims are more narrowly focused on blockchain implementation rather than the broader patent analysis capabilities needed for the problem statement.",
+        marketLeverage: "The patent addresses a smaller, more specialized market for IP verification tools. While valuable, it doesn't provide the same commercial leverage as AI-powered analysis systems for the stated problem of competitive intelligence and R&D strategy.",
+        freedomToOperate: "The patent has moderate blocking potential in the blockchain IP space, but competitors could potentially develop alternative verification methods. The claims don't provide strong protection against AI-powered analysis systems that address the core problem.",
+        licensingFeasibility: "The patent is owned by a smaller company with limited licensing infrastructure. While the technology is clear, it may be less attractive for licensing due to its narrower focus and smaller market potential compared to AI analysis systems."
+      }
+    ];
+
+    setAppState({
+      problemStatement: demoProblemStatement,
+      patents: demoPatents,
+      results: undefined
+    });
+    setIsDemoMode(true);
+    setError(null);
+  };
+
+  const clearDemoData = () => {
+    setAppState(initialState);
+    setIsDemoMode(false);
+    setError(null);
   };
 
   const addPatent = () => {
@@ -179,10 +221,15 @@ export default function Home() {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Patent Ranker</h1>
-          <p className="text-gray-600">
-            Analyze and rank up to four patents against your problem statement using AI
-          </p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Patent Ranker</h1>
+            <p className="text-gray-600">
+              Analyze and rank up to five patents against your problem statement using AI
+            </p>
+            {isDemoMode && (
+              <div className="mt-4 inline-flex items-center px-4 py-2 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                🎯 Demo Mode - Sample data loaded
+              </div>
+            )}
         </div>
 
         {/* Problem Statement */}
@@ -223,6 +270,33 @@ export default function Home() {
             />
           ))}
         </div>
+
+        {/* Demo Mode Buttons */}
+        {!isDemoMode && (
+          <div className="flex justify-center gap-4 mb-6">
+            <Button
+              onClick={loadDemoData}
+              variant="outline"
+              size="lg"
+              className="px-6"
+            >
+              🎯 Load Demo Data
+            </Button>
+          </div>
+        )}
+
+        {isDemoMode && (
+          <div className="flex justify-center gap-4 mb-6">
+            <Button
+              onClick={clearDemoData}
+              variant="outline"
+              size="lg"
+              className="px-6"
+            >
+              ✨ Clear Demo Data
+            </Button>
+          </div>
+        )}
 
         {/* Analyze Button */}
         <div className="flex justify-center gap-4 mb-8">
